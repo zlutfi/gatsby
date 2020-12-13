@@ -91,6 +91,12 @@ describe(`redux db`, () => {
   const initialComponentsState = _.cloneDeep(store.getState().components)
 
   beforeEach(() => {
+    // mock Date.now so Date.now() doesn't change in between tests
+    const RealDateNow = Date.now
+    let DateNowCallCount = 0
+    // simulate passage of time by increasing call counter (instead of actual time value)
+    Date.now = jest.fn(() => ++DateNowCallCount)
+
     store.dispatch(
       createPage(
         {
@@ -106,6 +112,8 @@ describe(`redux db`, () => {
         { name: `default-site-plugin` }
       )
     )
+
+    Date.now = RealDateNow
 
     writeToCache.mockClear()
     mockWrittenContent.clear()
