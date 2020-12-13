@@ -90,7 +90,7 @@ function getFakeNodes() {
 describe(`redux db`, () => {
   const initialComponentsState = _.cloneDeep(store.getState().components)
 
-  beforeEach(() => {
+  function createPages(pages) {
     // mock Date.now so Date.now() doesn't change in between tests
     const RealDateNow = Date.now
     let DateNowCallCount = 0
@@ -98,28 +98,35 @@ describe(`redux db`, () => {
     Date.now = jest.fn(() => ++DateNowCallCount)
 
     store.dispatch(
-      createPage(
-        {
-          path: `/my-sweet-new-page/`,
-          // seems like jest serializer doesn't play nice with Maps on Windows
-          component: `/Users/username/dev/site/src/templates/my-sweet-new-page.js`,
-          // The context is passed as props to the component as well
-          // as into the component's GraphQL query.
-          context: {
-            id: `123456`,
-          },
-        },
-        { name: `default-site-plugin` }
+      (Array.isArray(pages) ? pages : [pages]).map(page =>
+        createPage(page, {
+          name: `default-site-plugin`,
+        })
       )
     )
 
     Date.now = RealDateNow
+  }
 
+  const defaultPage = {
+    path: `/my-sweet-new-page/`,
+    // seems like jest serializer doesn't play nice with Maps on Windows
+    component: `/Users/username/dev/site/src/templates/my-sweet-new-page.js`,
+    // The context is passed as props to the component as well
+    // as into the component's GraphQL query.
+    context: {
+      id: `123456`,
+    },
+  }
+
+  beforeEach(() => {
     writeToCache.mockClear()
     mockWrittenContent.clear()
   })
 
   it(`should write redux cache to disk`, async () => {
+    createPages(defaultPage)
+
     expect(initialComponentsState).toEqual(new Map())
 
     store.getState().nodes = getFakeNodes()
@@ -145,6 +152,8 @@ describe(`redux db`, () => {
   })
 
   it(`should drop legacy file if exists`, async () => {
+    createPages(defaultPage)
+
     expect(initialComponentsState).toEqual(new Map())
 
     const legacyLocation = path.join(process.cwd(), `.cache/redux.state`)
